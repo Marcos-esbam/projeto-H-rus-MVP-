@@ -8,10 +8,12 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  ScrollView, // Adicionado para telas menores
+  ScrollView,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link } from 'expo-router'; // Importe o Link para navegação
+import { Link, useRouter } from 'expo-router';
+import { API_CONFIG } from '../constants/api';
 
 // --- Definição das Cores (copiado do seu LoginScreen) ---
 const GOLD_COLOR = '#D4AF37';
@@ -24,16 +26,49 @@ const BUTTON_BG = '#FFFFFF';
 const BUTTON_TEXT = '#000000';
 
 const SignUpScreen = () => {
+  const router = useRouter();
   // States para os novos campos
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // States para visibilidade da senha
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+
+  const handleSignUp = async () => {
+    if (password !== confirmPassword) {
+      Alert.alert('Erro', 'As senhas não coincidem');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert('Sucesso', 'Usuário registrado com sucesso');
+        router.push('/login');
+      } else {
+        Alert.alert('Erro', data.error || 'Erro ao registrar');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Erro ao registrar');
+    }
+    setLoading(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -129,8 +164,8 @@ const SignUpScreen = () => {
             </Text>
 
             {/* --- Botão de Sign Up --- */}
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>SIGN UP</Text>
+            <TouchableOpacity style={styles.actionButton} onPress={handleSignUp} disabled={loading}>
+              <Text style={styles.actionButtonText}>{loading ? 'CARREGANDO...' : 'SIGN UP'}</Text>
             </TouchableOpacity>
           </View>
         </View>

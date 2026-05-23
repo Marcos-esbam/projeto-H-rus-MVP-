@@ -11,11 +11,46 @@
 ## 📸 Screenshots
 
 
-## 📱 Sobre o Projeto
+## � Como Rodar o Projeto
 
-O **App Hórus** é um projeto de rede social focado em uma experiência de usuário visualmente impactante. O design utiliza uma paleta de cores de alto contraste (Preto e Dourado) e tipografia serifada para transmitir elegância.
+### Pré-requisitos
+- Node.js (versão 18 ou superior)
+- npm ou yarn
+- MongoDB (local ou Atlas)
+- Expo CLI (opcional, mas recomendado)
 
-O projeto foi construído utilizando a arquitetura moderna do **Expo Router** (navegação baseada em arquivos).
+### 1. Instalar Dependências do Frontend
+```bash
+npm install
+```
+
+### 2. Configurar e Rodar o Backend
+```bash
+cd backend
+npm install
+# Configure o .env com sua MONGO_URI
+npm start
+```
+O backend rodará em `http://localhost:5000`.
+
+### 3. Rodar o Frontend
+```bash
+# Na raiz do projeto
+npm start
+```
+Isso iniciará o Expo DevTools. Escolha a plataforma (iOS, Android ou web).
+
+### Funcionalidades Implementadas
+- ✅ Cadastro de usuário
+- ✅ Login de usuário
+- ✅ Criação de postagens
+- ✅ Listagem de postagens na home
+
+### Estrutura do Projeto
+- `app/` - Páginas do frontend (usando Expo Router)
+- `backend/` - Servidor Node.js com API REST
+- `components/` - Componentes reutilizáveis
+- `constants/` - Constantes do app (temas, etc.)
 
 ## 🎨 Design System
 

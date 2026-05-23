@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,33 @@ import {
   Platform,
 } from 'react-native';
 import { FontAwesome, Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { API_CONFIG } from '../../constants/api';
+
+// --- Interfaces ---
+interface User {
+  username: string;
+  avatar?: string;
+}
+
+interface Post {
+  _id: string;
+  user: User;
+  description: string;
+  image?: string;
+  location?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  likes: number;
+  comments: string[];
+  createdAt: string;
+}
+
+interface Profile {
+  id: string;
+  image: string;
+}
 
 // --- Definição das Cores ---
 const DARK_BG = '#000000';
@@ -21,7 +48,7 @@ const SECONDARY_TEXT = '#AAA';
 const BORDER_COLOR = '#222';
 
 // --- Dados Fictícios ---
-const profileLogos = [
+const profileLogos: Profile[] = [
   { id: '1', image: 'https://placehold.co' },
   { id: '2', image: 'https://placehold.co' },
   { id: '3', image: 'https://placehold.co' },
@@ -51,8 +78,8 @@ const feedData = [
   },
 ];
 
-// --- Componente do Perfil ---
-const ProfileLogo = ({ imageUrl, index }) => (
+// --- Componente do Perfil --- (mantido para stories, se quiser)
+const ProfileLogo: React.FC<{ imageUrl: string; index: number }> = ({ imageUrl, index }) => (
   <TouchableOpacity style={[styles.profileLogoContainer, index === 0 && { marginLeft: 16 }]}>
     <Image
       source={{ uri: `${imageUrl}/150x150/D4AF37/000000?text=Logo` }}
@@ -62,27 +89,36 @@ const ProfileLogo = ({ imageUrl, index }) => (
 );
 
 // --- Componente do Post ---
-const FeedPost = ({ post }) => (
+const FeedPost: React.FC<{ post: Post }> = ({ post }) => (
   <View style={styles.postContainer}>
     <View style={styles.postHeader}>
       <Image
-        source={{ uri: `${post.userAvatar}/100x100/EAEAEA/000000?text=Avatar` }}
+        source={{ uri: post.user?.avatar || 'https://placehold.co/100x100/EAEAEA/000000?text=Avatar' }}
         style={styles.postAvatar}
       />
       <View style={styles.postHeaderText}>
-        <Text style={styles.postUserName}>{post.userName}</Text>
-        <Text style={styles.postTimestamp}>{post.timestamp}</Text>
+        <Text style={styles.postUserName}>{post.user?.username || 'Usuário'}</Text>
+        <Text style={styles.postTimestamp}>{new Date(post.createdAt).toLocaleString()}</Text>
       </View>
       <TouchableOpacity>
         <Feather name="more-horizontal" size={24} color={SECONDARY_TEXT} />
       </TouchableOpacity>
     </View>
 
-    <Image
-      source={{ uri: `${post.postImage}/600x400/333/FFF?text=Post+Image` }}
-      style={styles.postImage}
-      resizeMode="cover"
-    />
+    {post.location && (
+      <View style={styles.locationBar}>
+        <Ionicons name="location" size={16} color={GOLD_COLOR} />
+        <Text style={styles.locationText}>{post.location.address}</Text>
+      </View>
+    )}
+
+    {post.image && (
+      <Image
+        source={{ uri: post.image }}
+        style={styles.postImage}
+        resizeMode="cover"
+      />
+    )}
 
     <Text style={styles.postDescription}>{post.description}</Text>
 
@@ -93,7 +129,7 @@ const FeedPost = ({ post }) => (
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionButton}>
         <Ionicons name="chatbubble-outline" size={24} color={LIGHT_TEXT} />
-        <Text style={styles.actionText}>{post.comments}</Text>
+        <Text style={styles.actionText}>{post.comments?.length || 0}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionButtonRight}>
         <MaterialCommunityIcons name="account-group-outline" size={26} color={LIGHT_TEXT} />
@@ -104,6 +140,23 @@ const FeedPost = ({ post }) => (
 
 // --- Tela Principal ---
 const HomeScreen = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/posts`);
+        const data = await response.json();
+        setPosts(data);
+      } catch (error) {
+        console.error('Erro ao buscar posts:', error);
+      }
+      setLoading(false);
+    };
+    fetchPosts();
+  }, []);
+
   const renderListHeader = () => (
     <>
       <View style={styles.profilesSection}>
@@ -122,6 +175,46 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
     </>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerUser}>
+            <Image
+              source={{ uri: 'https://placehold.co/100x100/D4AF37/000000?text=User' }}
+              style={styles.headerAvatar}
+            />
+            <Text style={styles.headerTitle}>USUÁRIO</Text>
+          </View>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity>
+              <Ionicons name="images-outline" size={24} color={LIGHT_TEXT} />
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginLeft: 16 }}>
+              <Ionicons name="filter-outline" size={24} color={LIGHT_TEXT} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: LIGHT_TEXT, fontSize: 16 }}>Carregando postagens...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Se não há postagens, mostrar mensagem
+  const renderEmptyState = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+      <MaterialCommunityIcons name="inbox-multiple-outline" size={50} color={GOLD_COLOR} />
+      <Text style={{ color: LIGHT_TEXT, fontSize: 18, fontWeight: 'bold', marginTop: 16, textAlign: 'center' }}>
+        Nenhuma postagem ainda
+      </Text>
+      <Text style={{ color: SECONDARY_TEXT, fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+        Clique no ícone de criar postagem para começar a compartilhar!
+      </Text>
+    </View>
   );
 
   return (
@@ -147,11 +240,12 @@ const HomeScreen = () => {
       </View>
 
       <FlatList
-        data={feedData}
+        data={posts}
         renderItem={({ item }) => <FeedPost post={item} />}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         ListHeaderComponent={renderListHeader}
-        contentContainerStyle={styles.feedContainer}
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={posts.length === 0 ? { flex: 1 } : styles.feedContainer}
       />
     </SafeAreaView>
   );
@@ -290,6 +384,22 @@ const styles = StyleSheet.create({
     color: LIGHT_TEXT,
     marginLeft: 6,
     fontSize: 14,
+  },
+  locationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 6,
+  },
+  locationText: {
+    color: GOLD_COLOR,
+    fontSize: 12,
+    marginLeft: 8,
+    flex: 1,
   },
 });
 
